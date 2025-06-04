@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Mock Interview
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mt-4">Practice your knowledge with AI</h1>
+<div class="dropdown text-center">
+  <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+    Choose a topic
+  </button>
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="{% url 'start_interview' 'python' %}">Python</a></li>
+    <li><a class="dropdown-item" href="{% url 'start_interview' 'django' %}">Django</a></li>
+    <li><a class="dropdown-item" href="{% url 'start_interview' 'javascript' %}">JavaScript</a></li>
+    <li><a class="dropdown-item" href="{% url 'start_interview' 'react' %}">React</a></li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Start Interview - {{ topic|capfirst }}
+{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #121212;
+    color: #f1f1f1;
+  }
+
+  .interview-heading {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #00d2ff, #3a47d5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .card {
+    background-color: #1e1e2f;
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+  }
+
+  textarea.form-control {
+    background-color: #2b2b3c;
+    color: #fff;
+    border: 1px solid #444;
+  }
+
+  textarea.form-control:focus {
+    background-color: #2b2b3c;
+    color: #fff;
+    border-color: #00bfff;
+    box-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+  }
+
+  .btn {
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+  }
+
+  .btn-success:hover {
+    background-color: #28a745;
+    color: #fff;
+  }
+
+  .btn-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+  }
+
+  .alert-info {
+    background-color: #2e3b55;
+    border-left: 5px solid #00bfff;
+    color: #d3e7ff;
+  }
+
+  .form-label {
+    margin-top: 1rem;
+    font-weight: 500;
+  }
+</style>
+
+<div class="container mt-5">
+  <h2 class="text-center interview-heading">{{ topic|capfirst }} Interview</h2>
+
+  <div class="card p-4 mt-4">
+    <h5><strong>🧠 Question:</strong></h5>
+    <p id="question-text" class="fs-5">{{ question }}</p>
+
+    <form method="post" action="{% url 'next_question' topic %}">
+      {% csrf_token %}
+      <input type="hidden" name="question" value="{{ question }}">
+
+      <h5 class="text-center my-3">Question {{ question_number }} of {{ total_questions }}</h5>
+
+      <label for="answer" class="form-label">✍️ Your Answer:</label>
+      <textarea id="answer" name="answer" class="form-control mt-2" rows="4" placeholder="Speak or type your answer here..."></textarea>
+
+      <div class="d-flex flex-column flex-md-row gap-2 mt-4 justify-content-between">
+        <button type="button" onclick="startRecording()" class="btn btn-outline-primary">
+          🎙️ Speak Answer
+        </button>
+        <button type="submit" name="action" value="submit" class="btn btn-success">
+          ✅ Submit Answer
+        </button>
+        <button type="submit" name="action" value="skip" class="btn btn-secondary">
+          ⏭️ Skip
+        </button>
+      </div>
+    </form>
+
+    {% if feedback %}
+    <div class="alert alert-info mt-4">
+      <strong>💬 Feedback:</strong>
+      <p>{{ feedback }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function speakQuestion() {
+    const text = document.getElementById('question-text').innerText;
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    } else {
+      alert("Sorry, your browser does not support speech synthesis.");
+    }
+  }
+
+  function startRecording() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      document.getElementById('answer').value = transcript;
+    };
+
+    recognition.onerror = function(event) {
+      alert('Speech recognition error: ' + event.error);
+    };
+  }
+
+  window.onload = speakQuestion;
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+  .result-header {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #0dcaf0;
+  }
+
+  .score-display {
+    font-size: 1.3rem;
+    color: #ffc107;
+    font-weight: 600;
+  }
+
+  .review-item {
+    background: linear-gradient(135deg, rgba(52, 58, 64, 0.95), rgba(33, 37, 41, 0.95));
+    color: #f8f9fa;
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    margin-bottom: 1rem;
+  }
+
+  .review-item strong {
+    color: #0d6efd;
+  }
+
+  .reviewss a {
+    padding: 10px 20px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .reviewss a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgb(84, 84, 85);
+    text-decoration: none;
+  }
+
+  .upper-line {
+    display: flex;
+    align-items: center; /* fixed typo here */
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+</style>
+
+<div class="container mt-5 text-center">
+  <h2 class="result-header">✅ You've completed the {{ topic|capfirst }} interview!</h2>
+  <p class="score-display">Your Score: <strong>{{ score }}</strong>/10</p>
+
+  <hr class="text-secondary">
+
+  <div class="upper-line">
+    <h4 class="text-start mt-4 mb-3 text-light">📋 Review Your Answers:</h4>
+    <div class="text-center mt-4 reviewss">
+      <a href="{% url 'review_answers' %}">📄 Review Your Answers</a>
+      <a href="{% url 'progress' %}">📊 Check Your Progress</a>
+    </div>
+  </div>
+
+  <ul class="list-group">
+    {% for item in answers %}
+    <li class="list-group-item review-item">
+      <strong>Q{{ forloop.counter }}:</strong> {{ item.question }}<br>
+      <strong>Your Answer:</strong>
+      {% if item.answer %}
+        {{ item.answer }}
+      {% else %}
+        <em class="text-muted">(No answer provided)</em>
+      {% endif %}
+      <br>
+      <strong>Score:</strong> {{ item.score }}/1
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<script>
+  function speakFeedback(text) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    } else {
+      alert("Sorry, your browser does not support speech synthesis.");
+    }
+  }
+
+  // Automatically speak each feedback after page load
+  window.onload = function () {
+    const feedbacks = document.querySelectorAll('.feedback-text');
+    let delay = 0;
+
+    feedbacks.forEach((element, index) => {
+      const feedback = element.innerText;
+      setTimeout(() => {
+        speakFeedback(`Feedback ${index + 1}: ${feedback}`);
+      }, delay);
+      delay += 4000;
+    });
+  };
+</script>
+{% endblock %}

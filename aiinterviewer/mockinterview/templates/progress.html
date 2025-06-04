@@ -1,0 +1,90 @@
+{% extends 'layout.html' %}
+{% block content %}
+<style>
+  body {
+    background-color: #121212;
+    color: #f1f1f1;
+  }
+
+  .container {
+    background-color: #1e1e2f;
+    border-radius: 1rem;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+    
+  }
+
+  h2, h4 {
+    color: #00bfff;
+  }
+
+  .table {
+    background-color: #2c2c3e;
+    color: #e0e0e0;
+  }
+
+  .table thead {
+    background-color: #3d3d5c;
+    color: #ffffff;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: #444466;
+  }
+
+  .list-group-item {
+    background-color: #2e2e40;
+    color: #ddd;
+    border: 1px solid #444;
+    transition: background 0.3s ease;
+  }
+
+  .list-group-item:hover {
+    background-color: #3d3d5c;
+    color: #fff;
+  }
+</style>
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">📈 Your Interview Progress</h2>
+
+  <h4>📚 Topic Summary</h4>
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th>Topic</th>
+        <th>Attempts</th>
+        <th>Avg. Score (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for topic, data in topic_summary.items %}
+      <tr>
+        <td>{{ topic|capfirst }}</td>
+        <td>{{ data.count }}</td>
+        <td>{{ data.average }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4 class="mt-4">📝 All Past Interviews</h4>
+  <form method="post" action="{% url 'progress' %}" class="text-center my-4">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">
+    🗑️ Reset Progress
+  </button>
+</form>
+
+  <ul class="list-group">
+    {% for interview in interviews %}
+    <li class="list-group-item">
+      {{ interview.date_taken|date:"M d, Y H:i" }} — 
+      <strong class="text-info">{{ interview.topic|capfirst }}</strong> — 
+      {{ interview.score }}/{{ interview.total_questions }}
+    </li>
+    {% empty %}
+    <li class="list-group-item text-warning">No interviews taken yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

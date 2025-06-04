@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+  .section-card {
+    border-radius: 1rem;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 8px 20px rgba(54, 54, 54, 0.7);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform: translateY(-4px);
+    background: #1e1e2f; /* subtle dark background */
+    color: #e9ecef;
+  }
+
+  .section-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 30px rgba(54, 54, 54, 0.9);
+  }
+
+  .heading-icon {
+    font-size: 2.2rem;
+    margin-right: 0.7rem;
+    vertical-align: middle;
+  }
+
+  .highlight {
+    color: #0d6efd;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-weight: 700;
+  }
+
+  ul.list-unstyled > li,
+  ol > li {
+    margin-bottom: 0.6rem;
+  }
+
+  .topic-btn a.btn {
+    font-weight: 600;
+    font-size: 1.25rem;
+    border-radius: 0.75rem;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .topic-btn a.btn:hover {
+    background-color: #0b5ed7;
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.5);
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 576px) {
+    .section-card {
+      padding: 1.5rem 1.75rem;
+    }
+    .heading-icon {
+      font-size: 1.8rem;
+      margin-right: 0.5rem;
+    }
+  }
+</style>
+
+<div class="container my-5">
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold text-primary">
+      🤖 Welcome to <span class="highlight">MockMate</span>
+    </h1>
+    <p class="lead text-muted mt-3">Your AI-powered mock interview companion</p>
+  </div>
+
+  <!-- What is MockMate -->
+  <div class="section-card mb-5">
+    <h3 class="text-primary">
+      <span class="heading-icon">📌</span>What is MockMate?
+    </h3>
+    <p class="fs-5">
+      <strong>MockMate</strong> is a smart mock interview simulator designed to mimic real-world technical interviews.
+      Using voice and text inputs, it quizzes you with topic-based questions, offers instant scoring,
+      feedback, and a complete performance review. Practice and grow with your virtual interviewer.
+    </p>
+  </div>
+
+  <!-- Who is it for -->
+  <div class="section-card mb-5">
+    <h3 class="text-success">
+      <span class="heading-icon">👥</span>Who is it for?
+    </h3>
+    <ul class="list-unstyled fs-5">
+      <li>🎓 <strong>Students</strong> prepping for tech and campus interviews</li>
+      <li>🧑‍💼 <strong>Job seekers</strong> sharpening communication skills</li>
+      <li>💻 <strong>Developers</strong> reviewing concepts before interviews</li>
+      <li>🎤 <strong>Anyone</strong> who wants to build confidence in answering out loud</li>
+    </ul>
+  </div>
+
+  <!-- How to use -->
+  <div class="section-card mb-5">
+    <h3 class="text-info">
+      <span class="heading-icon">🚀</span>How to Use MockMate?
+    </h3>
+    <ol class="fs-5">
+      <li>🔍 Choose a topic: <strong>Python, Django, JavaScript, or React</strong></li>
+      <li>🎧 Listen to or read each interview question</li>
+      <li>🎙️ Respond using <strong>voice</strong> or <strong>typed input</strong></li>
+      <li>✅ Receive real-time <strong>feedback</strong> and <strong>scoring</strong></li>
+      <li>📊 View your complete performance summary at the end</li>
+    </ol>
+  </div>
+
+  <!-- CTA Button -->
+  <div class="text-center mt-5 topic-btn">
+    <a href="{% url 'home' %}" class="btn btn-lg btn-primary px-4 py-2 shadow-sm">
+      🎯 Start Practicing Now
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+  .section-box {
+    border-radius: 1rem;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 12px 24px rgba(33, 37, 41, 0.85);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .section-box:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(33, 37, 41, 0.95);
+  }
+
+  .topic-btn {
+    min-width: 220px;
+    font-weight: 600;
+    font-size: 1.15rem;
+    padding: 0.85rem 1.75rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    color: white !important;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  .topic-btn.btn-outline-primary {
+    background: linear-gradient(135deg, #3751ff, #2a38c7);
+  }
+  .topic-btn.btn-outline-primary:hover {
+    background: linear-gradient(135deg, #5073ff, #3e54d4);
+  }
+
+  .topic-btn.btn-outline-success {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+  }
+  .topic-btn.btn-outline-success:hover {
+    background: linear-gradient(135deg, #4ac464, #298c3a);
+  }
+
+  .topic-btn.btn-outline-warning {
+    background: linear-gradient(135deg, #ffc107, #d39e00);
+    color: #212529 !important;
+  }
+  .topic-btn.btn-outline-warning:hover {
+    background: linear-gradient(135deg, #ffcd39, #e0ac00);
+    color: #212529 !important;
+  }
+
+  .topic-btn.btn-outline-info {
+    background: linear-gradient(135deg, #17a2b8, #0e6670);
+  }
+  .topic-btn.btn-outline-info:hover {
+    background: linear-gradient(135deg, #3bc2d6, #1393a1);
+  }
+
+  .main-heading {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #0d6efd;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .tagline {
+    font-size: 1.3rem;
+    color: #adb5bd;
+  }
+
+  .text-muted.fs-5 {
+    color: #e0e0e0 !important;
+  }
+
+  .text-secondary {
+    color: #ced4da !important;
+  }
+
+  .text-muted {
+    color: #a9afb6 !important;
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 576px) {
+    .topic-btn {
+      min-width: 100%;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem !important;
+    }
+    .section-box {
+      padding: 2rem 1.5rem;
+    }
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="text-center mb-5">
+    <h1 class="main-heading">👨‍💻 Welcome to <span class="text-primary">MockMate</span></h1>
+    <p class="tagline mt-3">Your AI-powered mock interview assistant to help you speak with confidence.</p>
+  </div>
+
+  <div class="section-box text-center">
+    <h2 class="mb-3">🚀 Ready to Ace Your Interview?</h2>
+    <p class="text-muted fs-5">
+      Choose a topic below and start your real-time mock interview.<br>
+      Answer through voice or text, get instant feedback and track your progress.
+    </p>
+
+    <div class="d-flex justify-content-center flex-wrap mt-4 gap-3">
+      <a href="{% url 'start_interview' 'python' %}" class="btn topic-btn btn-outline-primary">🐍 Python Interview</a>
+      <a href="{% url 'start_interview' 'django' %}" class="btn topic-btn btn-outline-success">🌐 Django Interview</a>
+      <a href="{% url 'start_interview' 'javascript' %}" class="btn topic-btn btn-outline-warning">⚡ JavaScript Interview</a>
+      <a href="{% url 'start_interview' 'react' %}" class="btn topic-btn btn-outline-info">⚛️ React Interview</a>
+    </div>
+  </div>
+
+  <div class="mt-5 text-center">
+    <h4 class="text-secondary mb-3">🎯 Practice. Improve. Succeed.</h4>
+    <p class="text-muted">
+      Whether you're a student, developer, or job seeker — MockMate helps you polish your technical communication skills<br>
+      and prepare with confidence for any opportunity ahead.
+    </p>
+  </div>
+</div>
+{% endblock %}

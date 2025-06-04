@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+  .review-header {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0dcaf0;
+  }
+
+  .card-custom {
+    background: linear-gradient(135deg, rgba(33, 37, 41, 0.95), rgba(52, 58, 64, 0.95));
+    color: #ffffff;
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+  }
+
+  .card-custom:hover {
+    transform: translateY(-5px);
+  }
+
+  .btn-pdf {
+    font-weight: 500;
+    border-radius: 8px;
+  }
+
+  .question {
+    color: #ffc107;
+    font-size: 1.2rem;
+  }
+
+  .answer {
+    color: #f8f9fa;
+    font-size: 1rem;
+  }
+
+  .no-answer {
+    color: #adb5bd;
+    font-style: italic;
+  }
+</style>
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4 review-header">📝 Review Your Answers</h2>
+
+  <div class="text-end mb-4">
+    <a href="{% url 'export_pdf' %}" class="btn btn-danger btn-pdf">⬇️ Export as PDF</a>
+  </div>
+
+  {% for item in answers %}
+    <div class="card card-custom mb-4">
+      <div class="card-body">
+        <h5 class="question"><strong>Q{{ forloop.counter }}:</strong> {{ item.question }}</h5>
+        <p class="answer">
+          <strong>Your Answer:</strong>
+          {% if item.answer %}
+            {{ item.answer }}
+          {% else %}
+            <span class="no-answer">(No answer given)</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
