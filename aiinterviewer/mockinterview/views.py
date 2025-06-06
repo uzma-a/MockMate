@@ -181,3 +181,5 @@ def reset_progress(request):
         # Delete all interviews of the logged-in user
         MockInterview.objects.filter(user=request.user).delete()
     return redirect('progress')  # Redirect back to progress page
+
+

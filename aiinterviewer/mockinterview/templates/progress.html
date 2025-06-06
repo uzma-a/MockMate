@@ -70,9 +70,9 @@
   <h4 class="mt-4">📝 All Past Interviews</h4>
   <form method="post" action="{% url 'progress' %}" class="text-center my-4">
   {% csrf_token %}
-  <button type="submit" class="btn btn-danger">
+  {% comment %} <button type="submit" class="btn btn-danger">
     🗑️ Reset Progress
-  </button>
+  </button> {% endcomment %}
 </form>
 
   <ul class="list-group">
