@@ -11,9 +11,12 @@ db.sqlite3
 # Django env file
 backend/.env
 
+.gitignore
+
 # Node.js
 frontend/node_modules/
 frontend/build/
+frontend/.gitignore/
 
 # Logs
 *.log
