@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyANTUkSMMOnXUJrszk-bYRh0onMerjg82E")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Load Whisper model with better error handling
