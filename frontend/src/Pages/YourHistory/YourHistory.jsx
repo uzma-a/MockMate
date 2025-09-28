@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const YourHistory = () => {
     const [interviewHistory, setInterviewHistory] = useState([]);
@@ -7,7 +9,7 @@ const YourHistory = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState(null);
 
-    
+  const navigate = useNavigate();
 
     // Load interview history from localStorage
     useEffect(() => {
@@ -15,7 +17,7 @@ const YourHistory = () => {
             try {
                 const savedHistory = JSON.parse(localStorage.getItem('interviewHistory') || '[]');
                 setInterviewHistory(savedHistory);
-                
+
                 // Group history by session
                 const grouped = savedHistory.reduce((acc, entry) => {
                     const sessionId = entry.sessionId || 'unknown';
@@ -29,16 +31,16 @@ const YourHistory = () => {
                         };
                     }
                     acc[sessionId].entries.push(entry);
-                    
+
                     // Count unique questions
                     const questionNumbers = new Set(acc[sessionId].entries
                         .filter(e => e.type === 'interviewer')
                         .map(e => e.questionNumber));
                     acc[sessionId].questionsCount = questionNumbers.size;
-                    
+
                     return acc;
                 }, {});
-                
+
                 setGroupedHistory(grouped);
             } catch (error) {
                 console.error('Error loading interview history:', error);
@@ -59,12 +61,12 @@ const YourHistory = () => {
         };
 
         window.addEventListener('storage', handleStorageChange);
-        
+
         // Also listen for custom events from the Interview component
         const handleHistoryUpdate = () => {
             loadHistory();
         };
-        
+
         window.addEventListener('interviewHistoryUpdated', handleHistoryUpdate);
 
         return () => {
@@ -75,31 +77,31 @@ const YourHistory = () => {
 
     // Clear all history
     const clearHistory = () => {
-    if (window.confirm('Are you sure you want to clear all interview history? This action cannot be undone.')) {
-        localStorage.removeItem('interviewHistory');
-        setInterviewHistory([]);
-        setGroupedHistory({});
-        setSelectedSession(null);
-        
-        toast.success('Interview history cleared successfully!', {
-            position: "top-right",
-            autoClose: 3000,
-        });
-    }
-};
+        if (window.confirm('Are you sure you want to clear all interview history? This action cannot be undone.')) {
+            localStorage.removeItem('interviewHistory');
+            setInterviewHistory([]);
+            setGroupedHistory({});
+            setSelectedSession(null);
+
+            toast.success('Interview history cleared successfully!', {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        }
+    };
 
     // Delete specific session
     const deleteSession = (sessionId) => {
         if (window.confirm('Are you sure you want to delete this interview session?')) {
             const updatedHistory = interviewHistory.filter(entry => entry.sessionId !== sessionId);
             localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
-            
+
             // Update state
             const updatedGrouped = { ...groupedHistory };
             delete updatedGrouped[sessionId];
             setGroupedHistory(updatedGrouped);
             setInterviewHistory(updatedHistory);
-            
+
             if (selectedSession === sessionId) {
                 setSelectedSession(null);
             }
@@ -124,7 +126,7 @@ const YourHistory = () => {
         const candidateAnswers = entries.filter(e => e.type === 'candidate');
         const feedback = entries.filter(e => e.type === 'feedback');
         const finalFeedback = entries.filter(e => e.type === 'final_feedback');
-        
+
         return {
             questionsAnswered: candidateAnswers.length,
             feedbackReceived: feedback.length,
@@ -430,7 +432,7 @@ const YourHistory = () => {
                                                 <span className="text-white fw-semibold">
                                                     📊 {Object.keys(groupedHistory).length} Interview Sessions
                                                 </span>
-                                               
+
                                             </div>
                                             <button
                                                 onClick={clearHistory}
@@ -454,9 +456,10 @@ const YourHistory = () => {
                                             <p className="text-white-50 mb-4">
                                                 Start your first interview to begin tracking your progress and improvement over time.
                                             </p>
-                                            <a href="/interview" className="btn btn-primary glass-btn">
+                                            <button as={Link} onClick={() => navigate('/interview')}
+                                                to="/interview" className="btn btn-primary glass-btn">
                                                 Start Your First Interview
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -469,7 +472,7 @@ const YourHistory = () => {
                                                 <h3 className="h5 text-white mb-3 fw-semibold">
                                                     Interview Sessions
                                                 </h3>
-                                                
+
                                                 <div className="overflow-auto" style={{ maxHeight: '600px' }}>
                                                     {Object.values(groupedHistory)
                                                         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -501,7 +504,7 @@ const YourHistory = () => {
                                                                             ×
                                                                         </button>
                                                                     </div>
-                                                                    
+
                                                                     <div className="d-flex flex-wrap gap-2">
                                                                         <span className="stat-badge">
                                                                             {stats.questionsAnswered} Q&A
@@ -531,8 +534,8 @@ const YourHistory = () => {
                                                                 Session Details
                                                             </h3>
                                                             <span className="badge bg-primary">
-                                                                {groupedHistory[selectedSession]?.topic.charAt(0).toUpperCase() + 
-                                                                 groupedHistory[selectedSession]?.topic.slice(1).replace('-', ' ')}
+                                                                {groupedHistory[selectedSession]?.topic.charAt(0).toUpperCase() +
+                                                                    groupedHistory[selectedSession]?.topic.slice(1).replace('-', ' ')}
                                                             </span>
                                                         </div>
 
@@ -543,14 +546,14 @@ const YourHistory = () => {
                                                                     const qNumA = a.questionNumber || 0;
                                                                     const qNumB = b.questionNumber || 0;
                                                                     if (qNumA !== qNumB) return qNumA - qNumB;
-                                                                    
+
                                                                     const typeOrder = { 'interviewer': 0, 'candidate': 1, 'feedback': 2, 'final_feedback': 3 };
                                                                     return (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0);
                                                                 })
                                                                 .map((entry, index) => {
                                                                     let icon = '';
                                                                     let label = '';
-                                                                    
+
                                                                     switch (entry.type) {
                                                                         case 'interviewer':
                                                                             icon = '🎯';
@@ -578,8 +581,8 @@ const YourHistory = () => {
                                                                                     {label}
                                                                                 </span>
                                                                             </div>
-                                                                            <p className="mb-0 text-white-75 lh-base" 
-                                                                               style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
+                                                                            <p className="mb-0 text-white-75 lh-base"
+                                                                                style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
                                                                                 {entry.content}
                                                                             </p>
                                                                         </div>
@@ -596,7 +599,7 @@ const YourHistory = () => {
                                                             Select a session to view details
                                                         </h5>
                                                         <p className="text-white-50 small">
-                                                            Click on any interview session from the list to review the questions, 
+                                                            Click on any interview session from the list to review the questions,
                                                             answers, and feedback.
                                                         </p>
                                                     </div>

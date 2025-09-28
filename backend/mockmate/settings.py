@@ -1,5 +1,5 @@
 
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,6 +25,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
+    "https://mockmate-interview.vercel.app/",
+    "https://mockmate-1-d0t6.onrender.com/"
 ]
 
 

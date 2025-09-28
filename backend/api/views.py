@@ -12,14 +12,18 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import MultiPartParser, FormParser
 import whisper
 import google.generativeai as genai
+from dotenv import load_dotenv
+import os
 
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyANTUkSMMOnXUJrszk-bYRh0onMerjg82E")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Load Whisper model with better error handling
