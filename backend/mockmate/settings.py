@@ -1,14 +1,11 @@
 
-
-from pathlib import Path
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -16,9 +13,10 @@ load_dotenv()
 SECRET_KEY = 'django-insecure-!mg*h9nex(gz1)b5%p10t)s7ow7xhbf4r2vege22rqirdl^)h1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["mockmate-1-d0t6.onrender.com", "localhost", "127.0.0.1", "https://mockmate-interview.vercel.app/"]
+
 
 
 # Application definition
@@ -29,7 +27,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "https://mockmate-interview.vercel.app/",
-    "https://mockmate-1-d0t6.onrender.com/",
+    "https://mockmate-1-d0t6.onrender.com/"
 ]
 
 
@@ -124,12 +122,12 @@ USE_I18N = True
 USE_TZ = True
 
 
-
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
