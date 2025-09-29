@@ -28,12 +28,18 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # Load Whisper model with better error handling
 whisper_model = None
-try:
-    logger.info("Loading Whisper model...")
-    whisper_model = whisper.load_model("base")
-    logger.info("Whisper model loaded successfully")
-except Exception as e:
-    logger.error(f"Failed to load Whisper model: {e}")
+def get_whisper_model():
+    """Load Whisper model only once, when first requested."""
+    global whisper_model
+    if whisper_model is None:
+        try:
+            logger.info("Loading Whisper model (tiny)...")
+            whisper_model = whisper.load_model("tiny")  # use 'tiny' for Render free tier
+            logger.info("Whisper model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load Whisper model: {e}")
+            raise
+    return whisper_model
 
 # Don't create a global TTS engine - we'll create fresh ones for each speech
 # This prevents the engine from getting stuck after first use
@@ -371,13 +377,15 @@ def submit_answer(request):
             
             logger.info(f"Audio saved to temp file: {tmp_path}")
             
+            model = get_whisper_model()
+            
             # Transcribe with Whisper with better error handling
             logger.info("Starting transcription...")
-            result = whisper_model.transcribe(
+            result = model.transcribe(
                 tmp_path,
-                language="en",  # Force English
+                language="en",
                 task="transcribe",
-                fp16=False  # Use FP32 to avoid the warning
+                fp16=False
             )
             transcript = result["text"].strip()
             
