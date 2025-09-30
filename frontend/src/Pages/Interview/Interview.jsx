@@ -113,7 +113,7 @@ export default function Interview() {
 
             console.log(`Starting interview with topic: ${topic}`);
 
-            const response = await fetch(`http://127.0.0.1:8000/api/question/?topic=${encodeURIComponent(topic)}`);
+            const response = await fetch(`https://mockmate-1-d0t6.onrender.com/api/question/?topic=${encodeURIComponent(topic)}`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -287,7 +287,7 @@ export default function Interview() {
             console.log('Session ID:', sessionId);
             console.log('Question ID:', questionId);
 
-            const response = await fetch('http://127.0.0.1:8000/api/answer/', {
+            const response = await fetch('https://mockmate-1-d0t6.onrender.com/api/answer/', {
                 method: 'POST',
                 body: formData,
             });
@@ -352,7 +352,7 @@ export default function Interview() {
             setLoading(true);
             console.log('Ending interview...');
 
-            const response = await fetch('http://127.0.0.1:8000/api/end/', {
+            const response = await fetch('https://mockmate-1-d0t6.onrender.com/api/end/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId }),
