@@ -11,9 +11,12 @@ import TargetAudiencePage from './Components/TargetAudiencePage/TargetAudiencePa
 import Footer from './Components/Footer'
 import YourHistory from './Pages/YourHistory/YourHistory';
 
+import { Toaster } from "react-hot-toast";
+
 function App() {
   return (
     <>
+    <Toaster position="top-center" reverseOrder={false} />
       <AppNavbar />
       <Routes>
         <Route

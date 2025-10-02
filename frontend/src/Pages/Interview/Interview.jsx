@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../Interview/Interview.css'
 
+import toast from "react-hot-toast";
+
 export default function Interview() {
+
+    const API_URL = import.meta.env.VITE_API_URL
+
     const [sessionId, setSessionId] = useState('');
     const [questionId, setQuestionId] = useState('');
     const [greeting, setGreeting] = useState('');
@@ -111,9 +116,9 @@ export default function Interview() {
             setFeedback('');
             setTranscript('');
 
-            console.log(`Starting interview with topic: ${topic}`);
+            toast.success(`Starting interview with topic: ${topic}`);
 
-            const response = await fetch(`http://127.0.0.1:8000/api/question/?topic=${encodeURIComponent(topic)}`);
+            const response = await fetch(`${API_URL}/question/?topic=${encodeURIComponent(topic)}`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -121,7 +126,7 @@ export default function Interview() {
 
             const data = await response.json();
 
-            console.log('Interview started successfully:', data);
+            toast.success('Interview started successfully', data);
 
             setSessionId(data.session_id);
             setQuestionId(data.question_id);
@@ -139,7 +144,7 @@ export default function Interview() {
 
         } catch (error) {
             console.error('Error starting interview:', error);
-            alert(`Failed to start interview: ${error.message}`);
+            toast.error(`Failed to start interview: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -164,7 +169,7 @@ export default function Interview() {
             });
 
             streamRef.current = stream;
-            console.log('Microphone access granted');
+            // console.log('Microphone access granted');
 
             // Check for supported MIME types
             let mimeType = 'audio/webm;codecs=opus';
@@ -178,7 +183,7 @@ export default function Interview() {
                 }
             }
 
-            console.log(`Using MIME type: ${mimeType || 'browser default'}`);
+            // console.log(`Using MIME type: ${mimeType || 'browser default'}`);
 
             // Create MediaRecorder with proper configuration
             const options = {
@@ -192,20 +197,20 @@ export default function Interview() {
             mediaRecorderRef.current = new MediaRecorder(stream, options);
 
             mediaRecorderRef.current.ondataavailable = (event) => {
-                console.log('Data available:', event.data.size, 'bytes');
+                // console.log('Data available:', event.data.size, 'bytes');
                 if (event.data && event.data.size > 0) {
                     chunksRef.current.push(event.data);
                 }
             };
 
             mediaRecorderRef.current.onerror = (event) => {
-                console.error('MediaRecorder error:', event.error);
-                alert('Recording error occurred. Please try again.');
+                // console.error('MediaRecorder error:', event.error);
+                toast.error('Recording error occurred. Please try again.');
                 setRecording(false);
             };
 
             mediaRecorderRef.current.onstart = () => {
-                console.log('Recording started');
+                toast.success('Recording started');
             };
 
             mediaRecorderRef.current.onstop = () => {
@@ -216,10 +221,10 @@ export default function Interview() {
             // Start recording with time slice for better data handling
             mediaRecorderRef.current.start(1000); // Capture data every second
             setRecording(true);
-            console.log('MediaRecorder started');
+            // console.log('MediaRecorder started');
 
         } catch (error) {
-            console.error('Error accessing microphone:', error);
+            toast.error('Error accessing microphone:', error);
             let errorMessage = 'Could not access microphone. ';
 
             if (error.name === 'NotAllowedError') {
@@ -230,24 +235,24 @@ export default function Interview() {
                 errorMessage += error.message;
             }
 
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
     };
 
     const stopRecording = () => {
         if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
-            console.warn('MediaRecorder not active');
+            toast.error('MediaRecorder not active');
             return;
         }
 
-        console.log('Stopping recording...');
+        // console.log('Stopping recording...');
         mediaRecorderRef.current.stop();
 
         // Stop all tracks
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
                 track.stop();
-                console.log('Track stopped:', track.kind);
+                // console.log('Track stopped:', track.kind);
             });
             streamRef.current = null;
         }
@@ -257,8 +262,8 @@ export default function Interview() {
 
     const handleRecordingStopped = async () => {
         if (chunksRef.current.length === 0) {
-            console.error('No audio data recorded');
-            alert('No audio was recorded. Please try again.');
+            toast.error('No audio data recorded');
+            
             return;
         }
 
@@ -271,7 +276,7 @@ export default function Interview() {
                 type: mediaRecorderRef.current?.mimeType || 'audio/webm'
             });
 
-            console.log('Audio blob created:', blob.size, 'bytes, type:', blob.type);
+            // console.log('Audio blob created:', blob.size, 'bytes, type:', blob.type);
 
             if (blob.size === 0) {
                 throw new Error('Empty audio recording');
@@ -283,25 +288,25 @@ export default function Interview() {
             formData.append('question_id', questionId);
             formData.append('session_id', sessionId);
 
-            console.log('Sending audio to server...');
-            console.log('Session ID:', sessionId);
-            console.log('Question ID:', questionId);
+            toast.success('Checking your answer...');
+            // console.log('Session ID:', sessionId);
+            // console.log('Question ID:', questionId);
 
-            const response = await fetch('http://127.0.0.1:8000/api/answer/', {
+            const response = await fetch(`${API_URL}/answer/`, {
                 method: 'POST',
                 body: formData,
             });
 
-            console.log('Server response status:', response.status);
+            // console.log('Server response status:', response.status);
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Server error response:', errorText);
+                // console.error('Server error response:', errorText);
                 throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
-            console.log('Server response data:', data);
+            // console.log('Server response data:', data);
 
             if (data.error) {
                 throw new Error(data.error);
@@ -336,11 +341,11 @@ export default function Interview() {
                 questionNumber: data.question_number
             });
 
-            console.log('Answer processed successfully');
+            toast.success('Answer processed successfully');
 
         } catch (error) {
             console.error('Error processing answer:', error);
-            alert(`Failed to process answer: ${error.message}`);
+            toast.error(`Failed to process answer: ${error.message}`);
         } finally {
             chunksRef.current = [];
             setLoading(false);
@@ -350,9 +355,9 @@ export default function Interview() {
     const endInterview = async () => {
         try {
             setLoading(true);
-            console.log('Ending interview...');
+            toast.success('Ending interview...');
 
-            const response = await fetch('http://127.0.0.1:8000/api/end/', {
+            const response = await fetch(`${API_URL}/end/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId }),
@@ -363,7 +368,7 @@ export default function Interview() {
             }
 
             const data = await response.json();
-            console.log('Interview ended:', data);
+            // console.log('Interview ended:', data);
 
             if (data.error) {
                 throw new Error(data.error);
@@ -377,11 +382,11 @@ export default function Interview() {
             });
 
             setInterviewStarted(false);
-            alert(`Interview completed! ${data.questions_asked} questions asked. Check Your History to review your performance.`);
+            toast.success(`Interview completed! ${data.questions_asked} questions asked. Check Your History to review your performance.`);
 
         } catch (error) {
             console.error('Error ending interview:', error);
-            alert(`Failed to end interview: ${error.message}`);
+            toast.error(`Failed to end interview: ${error.message}`);
         } finally {
             setLoading(false);
         }
