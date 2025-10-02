@@ -116,7 +116,7 @@ export default function Interview() {
             setFeedback('');
             setTranscript('');
 
-            toast.success(`Starting interview with topic: ${topic}`);
+            
 
             const response = await fetch(`${API_URL}/question/?topic=${encodeURIComponent(topic)}`);
 
