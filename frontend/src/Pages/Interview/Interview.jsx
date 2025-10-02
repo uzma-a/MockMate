@@ -116,10 +116,7 @@ export default function Interview() {
             setFeedback('');
             setTranscript('');
 
-<<<<<<< HEAD
             
-=======
->>>>>>> 4c2309cc91ab3a7a969daace379b0cb080a7a42c
 
             const response = await fetch(`${API_URL}/question/?topic=${encodeURIComponent(topic)}`);
 
