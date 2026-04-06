@@ -3,7 +3,6 @@ import random
 import tempfile
 import logging
 import json
-import whisper
 import google.generativeai as genai
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, parser_classes
@@ -23,13 +22,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Load Whisper model
-whisper_model = None
-try:
-    logger.info("Loading Whisper model...")
-    whisper_model = whisper.load_model("base")
-    logger.info("Whisper model loaded successfully")
-except Exception as e:
-    logger.error(f"Failed to load Whisper model: {e}")
+# No model loading needed — Gemini handles everything
+logger.info("Using Gemini for transcription and AI responses")
 
 # Interview session storage (in production, use database or Redis)
 interview_sessions = {}
@@ -177,13 +171,20 @@ def submit_answer(request):
             
             # Transcribe with Whisper
             logger.info("Starting transcription...")
-            result = whisper_model.transcribe(
-                tmp_path,
-                language="en",
-                task="transcribe",
-                fp16=False
-            )
-            transcript = result["text"].strip()
+            
+            # Read audio file as bytes
+            with open(tmp_path, "rb") as f:
+                audio_bytes = f.read()
+            # Transcribe using Gemini
+            transcription_model = genai.GenerativeModel("gemini-2.5-flash")
+            transcription_response = transcription_model.generate_content([
+                {
+                    "mime_type": audio_file.content_type or "audio/webm",
+                    "data": audio_bytes
+                },
+                "Transcribe this audio exactly as spoken. Return only the spoken words, nothing else."
+            ])
+            transcript = transcription_response.text.strip()
             
             logger.info(f"Transcription completed: {transcript}")
             
