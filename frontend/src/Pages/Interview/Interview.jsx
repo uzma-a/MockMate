@@ -19,11 +19,64 @@ export default function Interview() {
     const [topic, setTopic] = useState('python');
     const [interviewStarted, setInterviewStarted] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [voiceEnabled, setVoiceEnabled] = useState(true);
 
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
     const streamRef = useRef(null);
     const recordingTimerRef = useRef(null);
+
+    // ─── Text-to-Speech (Web Speech API — works on Vercel, Railway, everywhere) ───
+    const speak = (text, onEnd = null) => {
+        if (!voiceEnabled || !window.speechSynthesis) return;
+
+        // Cancel any ongoing speech first
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.92;
+        utterance.pitch = 1.05;
+        utterance.volume = 1;
+
+        // Pick a natural English voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v =>
+            v.lang.startsWith('en') && (
+                v.name.includes('Google') ||
+                v.name.includes('Natural') ||
+                v.name.includes('Samantha') ||
+                v.name.includes('Daniel')
+            )
+        );
+        if (preferred) utterance.voice = preferred;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            if (onEnd) onEnd();
+        };
+        utterance.onerror = () => setIsSpeaking(false);
+
+        window.speechSynthesis.speak(utterance);
+    };
+
+    const stopSpeaking = () => {
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+        }
+    };
+
+    // Preload voices (browsers load them async)
+    useEffect(() => {
+        const loadVoices = () => window.speechSynthesis.getVoices();
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        return () => {
+            stopSpeaking();
+        };
+    }, []);
 
     // Helper function to save to localStorage (for sharing with YourHistory)
     const saveInterviewHistory = (historyEntry) => {
@@ -36,8 +89,6 @@ export default function Interview() {
                 topic: topic
             }];
             localStorage.setItem('interviewHistory', JSON.stringify(updatedHistory));
-            
-            // Dispatch custom event to notify YourHistory component
             window.dispatchEvent(new Event('interviewHistoryUpdated'));
         } catch (error) {
             console.error('Error saving interview history:', error);
@@ -52,7 +103,6 @@ export default function Interview() {
             const rect = card.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
-
             card.style.setProperty('--mouse-x', `${x}%`);
             card.style.setProperty('--mouse-y', `${y}%`);
         };
@@ -65,7 +115,6 @@ export default function Interview() {
         cards.forEach(card => {
             const mouseMoveHandler = (e) => handleMouseMove(e, card);
             const mouseLeaveHandler = () => handleMouseLeave(card);
-
             card.addEventListener('mousemove', mouseMoveHandler);
             card.addEventListener('mouseleave', mouseLeaveHandler);
         });
@@ -85,16 +134,11 @@ export default function Interview() {
                 setRecordingTime(prev => prev + 1);
             }, 1000);
         } else {
-            if (recordingTimerRef.current) {
-                clearInterval(recordingTimerRef.current);
-            }
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
             setRecordingTime(0);
         }
-
         return () => {
-            if (recordingTimerRef.current) {
-                clearInterval(recordingTimerRef.current);
-            }
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         };
     }, [recording]);
 
@@ -104,9 +148,8 @@ export default function Interview() {
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
             }
-            if (recordingTimerRef.current) {
-                clearInterval(recordingTimerRef.current);
-            }
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+            stopSpeaking();
         };
     }, []);
 
@@ -116,11 +159,6 @@ export default function Interview() {
             setFeedback('');
             setTranscript('');
 
-<<<<<<< HEAD
-            
-=======
->>>>>>> 4c2309cc91ab3a7a969daace379b0cb080a7a42c
-
             const response = await fetch(`${API_URL}/question/?topic=${encodeURIComponent(topic)}`);
 
             if (!response.ok) {
@@ -129,7 +167,7 @@ export default function Interview() {
 
             const data = await response.json();
 
-            toast.success('Interview started successfully', data);
+            toast.success('Interview started successfully');
 
             setSessionId(data.session_id);
             setQuestionId(data.question_id);
@@ -138,7 +176,9 @@ export default function Interview() {
             setQuestionNumber(data.question_number);
             setInterviewStarted(true);
 
-            // Save initial question to history
+            // 🔊 Speak greeting + first question
+            speak(`${data.greeting} ${data.question}`);
+
             saveInterviewHistory({
                 type: 'interviewer',
                 content: data.greeting ? `${data.greeting} ${data.question}` : data.question,
@@ -154,13 +194,12 @@ export default function Interview() {
     };
 
     const startRecording = async () => {
-        try {
-            console.log('Requesting microphone access...');
+        // Stop any ongoing speech before recording
+        stopSpeaking();
 
-            // Reset chunks
+        try {
             chunksRef.current = [];
 
-            // Get media stream with specific constraints
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
@@ -172,42 +211,30 @@ export default function Interview() {
             });
 
             streamRef.current = stream;
-            // console.log('Microphone access granted');
 
-            // Check for supported MIME types
             let mimeType = 'audio/webm;codecs=opus';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
                 mimeType = 'audio/webm';
                 if (!MediaRecorder.isTypeSupported(mimeType)) {
                     mimeType = 'audio/wav';
                     if (!MediaRecorder.isTypeSupported(mimeType)) {
-                        mimeType = ''; // Let browser choose
+                        mimeType = '';
                     }
                 }
             }
 
-            // console.log(`Using MIME type: ${mimeType || 'browser default'}`);
-
-            // Create MediaRecorder with proper configuration
-            const options = {
-                audioBitsPerSecond: 128000
-            };
-
-            if (mimeType) {
-                options.mimeType = mimeType;
-            }
+            const options = { audioBitsPerSecond: 128000 };
+            if (mimeType) options.mimeType = mimeType;
 
             mediaRecorderRef.current = new MediaRecorder(stream, options);
 
             mediaRecorderRef.current.ondataavailable = (event) => {
-                // console.log('Data available:', event.data.size, 'bytes');
                 if (event.data && event.data.size > 0) {
                     chunksRef.current.push(event.data);
                 }
             };
 
-            mediaRecorderRef.current.onerror = (event) => {
-                // console.error('MediaRecorder error:', event.error);
+            mediaRecorderRef.current.onerror = () => {
                 toast.error('Recording error occurred. Please try again.');
                 setRecording(false);
             };
@@ -217,19 +244,14 @@ export default function Interview() {
             };
 
             mediaRecorderRef.current.onstop = () => {
-                console.log('Recording stopped');
                 handleRecordingStopped();
             };
 
-            // Start recording with time slice for better data handling
-            mediaRecorderRef.current.start(1000); // Capture data every second
+            mediaRecorderRef.current.start(1000);
             setRecording(true);
-            // console.log('MediaRecorder started');
 
         } catch (error) {
-            toast.error('Error accessing microphone:', error);
             let errorMessage = 'Could not access microphone. ';
-
             if (error.name === 'NotAllowedError') {
                 errorMessage += 'Please allow microphone access and try again.';
             } else if (error.name === 'NotFoundError') {
@@ -237,7 +259,6 @@ export default function Interview() {
             } else {
                 errorMessage += error.message;
             }
-
             toast.error(errorMessage);
         }
     };
@@ -248,15 +269,10 @@ export default function Interview() {
             return;
         }
 
-        // console.log('Stopping recording...');
         mediaRecorderRef.current.stop();
 
-        // Stop all tracks
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => {
-                track.stop();
-                // console.log('Track stopped:', track.kind);
-            });
+            streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
 
@@ -266,60 +282,42 @@ export default function Interview() {
     const handleRecordingStopped = async () => {
         if (chunksRef.current.length === 0) {
             toast.error('No audio data recorded');
-            
             return;
         }
 
         setLoading(true);
-        console.log('Processing recorded audio...');
 
         try {
-            // Create blob from chunks
             const blob = new Blob(chunksRef.current, {
                 type: mediaRecorderRef.current?.mimeType || 'audio/webm'
             });
 
-            // console.log('Audio blob created:', blob.size, 'bytes, type:', blob.type);
+            if (blob.size === 0) throw new Error('Empty audio recording');
 
-            if (blob.size === 0) {
-                throw new Error('Empty audio recording');
-            }
-
-            // Prepare form data
             const formData = new FormData();
             formData.append('audio', blob, 'answer.webm');
             formData.append('question_id', questionId);
             formData.append('session_id', sessionId);
 
             toast.success('Checking your answer...');
-            // console.log('Session ID:', sessionId);
-            // console.log('Question ID:', questionId);
 
             const response = await fetch(`${API_URL}/answer/`, {
                 method: 'POST',
                 body: formData,
             });
 
-            // console.log('Server response status:', response.status);
-
             if (!response.ok) {
                 const errorText = await response.text();
-                // console.error('Server error response:', errorText);
                 throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
 
             const data = await response.json();
-            // console.log('Server response data:', data);
 
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            if (data.error) throw new Error(data.error);
 
-            // Update state with response
             setTranscript(data.transcript);
             setFeedback(data.feedback);
 
-            // Save to history
             saveInterviewHistory({
                 type: 'candidate',
                 content: data.transcript,
@@ -332,17 +330,21 @@ export default function Interview() {
                 questionNumber: questionNumber
             });
 
-            // Update for next question
             setQuestion(data.next_question);
             setQuestionId(data.question_id);
             setQuestionNumber(data.question_number);
 
-            // Save next question to history
             saveInterviewHistory({
                 type: 'interviewer',
                 content: data.next_question,
                 questionNumber: data.question_number
             });
+
+            // 🔊 Speak feedback, then next question after feedback finishes
+            speak(
+                `${data.feedback}`,
+                () => speak(`Next question: ${data.next_question}`)
+            );
 
             toast.success('Answer processed successfully');
 
@@ -358,6 +360,10 @@ export default function Interview() {
     const endInterview = async () => {
         try {
             setLoading(true);
+
+            // 🔊 Stop any ongoing speech
+            stopSpeaking();
+
             toast.success('Ending interview...');
 
             const response = await fetch(`${API_URL}/end/`, {
@@ -366,18 +372,12 @@ export default function Interview() {
                 body: JSON.stringify({ session_id: sessionId }),
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const data = await response.json();
-            // console.log('Interview ended:', data);
 
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            if (data.error) throw new Error(data.error);
 
-            // Save final feedback to history
             saveInterviewHistory({
                 type: 'final_feedback',
                 content: data.final_feedback,
@@ -385,6 +385,10 @@ export default function Interview() {
             });
 
             setInterviewStarted(false);
+
+            // 🔊 Speak final feedback summary
+            speak(`Interview complete. Here is your feedback. ${data.final_feedback}`);
+
             toast.success(`Interview completed! ${data.questions_asked} questions asked. Check Your History to review your performance.`);
 
         } catch (error) {
@@ -395,7 +399,6 @@ export default function Interview() {
         }
     };
 
-    // Format recording time
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -404,9 +407,7 @@ export default function Interview() {
 
     return (
         <>
-            {/* Enhanced Styles */}
-            <style jsx>{`
-                /* Root Variables */
+            <style>{`
                 :root {
                   --primary-color: #ffffff;
                   --secondary-color: #000000;
@@ -434,7 +435,6 @@ export default function Interview() {
                   background: #000000;
                 }
 
-                /* Container Background */
                 .interview-container {
                   position: relative;
                   background-image: url('https://miro.medium.com/v2/resize:fit:2048/1%2AZFhxra9Yv32Xq0ShaswSvg.jpeg');
@@ -448,10 +448,8 @@ export default function Interview() {
                 .interview-container::before {
                   content: "";
                   position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 100%;
+                  top: 0; left: 0;
+                  width: 100%; height: 100%;
                   background: rgba(0, 0, 0, 0.85);
                   z-index: 0;
                 }
@@ -461,24 +459,19 @@ export default function Interview() {
                   z-index: 1;
                 }
 
-                /* Enhanced Glass Card Styling */
                 .glass-card {
                   background: rgba(255, 255, 255, 0) !important;
                   background-image: 
                     linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%),
                     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-                  
                   border: 1px solid rgba(255, 255, 255, 0.15) !important;
                   border-radius: 20px !important;
-                  
                   backdrop-filter: blur(20px) saturate(150%);
                   -webkit-backdrop-filter: blur(20px) saturate(150%);
-                  
                   box-shadow: 
                     0 8px 32px rgba(0, 0, 0, 0.3),
                     0 2px 8px rgba(0, 0, 0, 0.2),
                     inset 0 1px 0 rgba(255, 255, 255, 0.15);
-                  
                   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
                   padding: 12px;
                   position: relative;
@@ -489,18 +482,9 @@ export default function Interview() {
                 .glass-card::before {
                   content: '';
                   position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
+                  top: 0; left: 0; right: 0;
                   height: 1px;
-                  background: linear-gradient(
-                    90deg, 
-                    transparent 0%, 
-                    rgba(255, 255, 255, 0.4) 20%,
-                    rgba(255, 255, 255, 0.6) 50%,
-                    rgba(255, 255, 255, 0.4) 80%,
-                    transparent 100%
-                  );
+                  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 20%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.4) 80%, transparent 100%);
                   z-index: 1;
                 }
 
@@ -508,9 +492,7 @@ export default function Interview() {
                   background: rgba(255, 255, 255, 0.03) !important;
                   backdrop-filter: blur(25px) saturate(180%);
                   -webkit-backdrop-filter: blur(25px) saturate(180%);
-                  
                   transform: translateY(-8px) scale(1.02);
-                  
                   box-shadow: 
                     0 32px 64px rgba(0, 0, 0, 0.4),
                     0 8px 24px rgba(0, 0, 0, 0.3),
@@ -521,27 +503,16 @@ export default function Interview() {
                 .glass-card::after {
                   content: '';
                   position: absolute;
-                  top: 0;
-                  left: 0;
-                  right: 0;
-                  bottom: 0;
-                  background: radial-gradient(
-                    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-                    rgba(255, 255, 255, 0.08) 0%,
-                    rgba(255, 255, 255, 0.04) 30%,
-                    transparent 50%
-                  );
+                  top: 0; left: 0; right: 0; bottom: 0;
+                  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 30%, transparent 50%);
                   opacity: 0;
                   transition: opacity 0.4s ease;
                   pointer-events: none;
                   z-index: 0;
                 }
 
-                .glass-card:hover::after {
-                  opacity: 1;
-                }
+                .glass-card:hover::after { opacity: 1; }
 
-                /* Content styling */
                 .glass-card .card-body {
                   color: rgba(255, 255, 255, 0.95) !important;
                   position: relative;
@@ -552,35 +523,32 @@ export default function Interview() {
                   color: rgba(255, 255, 255, 0.98) !important;
                   font-weight: 700;
                   letter-spacing: -0.025em;
-                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
                 }
 
                 .glass-card .card-text {
                   color: rgba(255, 255, 255, 0.9) !important;
                   line-height: 1.6;
-                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
                 }
 
-                /* Enhanced Button Styling */
                 .glass-btn {
-                  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)) !important;
-                  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                  background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)) !important;
+                  border: 1px solid rgba(255,255,255,0.2) !important;
                   border-radius: 12px !important;
-                  color: rgba(255, 255, 255, 0.95) !important;
+                  color: rgba(255,255,255,0.95) !important;
                   font-weight: 600 !important;
                   backdrop-filter: blur(10px);
                   transition: all 0.3s ease;
-                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
                   position: relative;
                   overflow: hidden;
                 }
 
                 .glass-btn:hover {
-                  background: linear-gradient(45deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08)) !important;
-                  border-color: rgba(255, 255, 255, 0.3) !important;
-                  color: rgba(255, 255, 255, 1) !important;
+                  background: linear-gradient(45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08)) !important;
+                  border-color: rgba(255,255,255,0.3) !important;
+                  color: rgba(255,255,255,1) !important;
                   transform: translateY(-2px);
-                  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+                  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
                 }
 
                 .glass-btn.btn-success {
@@ -607,7 +575,50 @@ export default function Interview() {
                   color: #ffffff !important;
                 }
 
-                /* Recording timer */
+                /* Voice toggle button */
+                .voice-toggle {
+                  background: rgba(255,255,255,0.08) !important;
+                  border: 1px solid rgba(255,255,255,0.15) !important;
+                  border-radius: 10px !important;
+                  color: rgba(255,255,255,0.7) !important;
+                  font-size: 0.8rem !important;
+                  padding: 6px 12px !important;
+                  transition: all 0.3s ease;
+                }
+
+                .voice-toggle.active {
+                  background: rgba(59, 130, 246, 0.2) !important;
+                  border-color: rgba(59, 130, 246, 0.4) !important;
+                  color: #3b82f6 !important;
+                }
+
+                /* Speaking pulse indicator */
+                @keyframes speakingPulse {
+                  0%, 100% { opacity: 1; transform: scale(1); }
+                  50% { opacity: 0.6; transform: scale(1.08); }
+                }
+
+                .speaking-indicator {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 8px;
+                  background: rgba(59, 130, 246, 0.15);
+                  border: 1px solid rgba(59, 130, 246, 0.35);
+                  border-radius: 8px;
+                  padding: 6px 14px;
+                  color: #3b82f6;
+                  font-size: 0.85rem;
+                  font-weight: 600;
+                  animation: speakingPulse 1.5s ease-in-out infinite;
+                }
+
+                .speaking-dot {
+                  width: 8px; height: 8px;
+                  border-radius: 50%;
+                  background: #3b82f6;
+                  animation: speakingPulse 0.8s ease-in-out infinite;
+                }
+
                 .recording-timer {
                   background: rgba(239, 68, 68, 0.2);
                   border: 1px solid rgba(239, 68, 68, 0.4);
@@ -618,21 +629,20 @@ export default function Interview() {
                   font-family: monospace;
                 }
 
-                /* Form Controls */
                 .glass-form-select {
-                  background: rgba(255, 255, 255, 0.08) !important;
-                  color: rgba(255, 255, 255, 0.95) !important;
-                  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                  background: rgba(255,255,255,0.08) !important;
+                  color: rgba(255,255,255,0.95) !important;
+                  border: 1px solid rgba(255,255,255,0.15) !important;
                   border-radius: 12px !important;
                   backdrop-filter: blur(10px);
                   transition: all 0.3s ease;
                 }
 
                 .glass-form-select:focus {
-                  background: rgba(255, 255, 255, 0.12) !important;
-                  color: rgba(255, 255, 255, 1) !important;
-                  border-color: rgba(255, 255, 255, 0.3) !important;
-                  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+                  background: rgba(255,255,255,0.12) !important;
+                  color: rgba(255,255,255,1) !important;
+                  border-color: rgba(255,255,255,0.3) !important;
+                  box-shadow: 0 0 0 3px rgba(255,255,255,0.1) !important;
                 }
 
                 .glass-form-select option {
@@ -640,7 +650,6 @@ export default function Interview() {
                   color: #ffffff !important;
                 }
 
-                /* Main Header */
                 .main-title {
                   color: var(--text-primary) !important;
                   font-weight: 800 !important;
@@ -653,10 +662,8 @@ export default function Interview() {
                 .main-title::after {
                   content: '';
                   position: absolute;
-                  bottom: -8px;
-                  left: 0;
-                  width: 0;
-                  height: 3px;
+                  bottom: -8px; left: 0;
+                  width: 0; height: 3px;
                   background: linear-gradient(90deg, #ffffff 0%, #cccccc 50%, #ffffff 100%);
                   border-radius: 2px;
                   animation: underlineExpand 1.2s ease-out 0.8s both;
@@ -671,74 +678,38 @@ export default function Interview() {
                   animation: subtitleSlideIn 1s ease-out 0.6s both;
                   font-size: 1.25rem;
                   font-weight: 300;
-                  letter-spacing: 0.01em;
                 }
 
-                /* Recording pulse animation */
                 @keyframes recordingPulse {
-                  0%, 100% { 
-                    opacity: 1;
-                    transform: scale(1);
-                    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-                  }
-                  50% { 
-                    opacity: 0.8;
-                    transform: scale(1.05);
-                    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-                  }
+                  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+                  50% { opacity: 0.8; transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239,68,68,0); }
                 }
 
-                .recording-btn {
-                  animation: recordingPulse 2s infinite !important;
-                }
+                .recording-btn { animation: recordingPulse 2s infinite !important; }
 
-                /* Animations */
                 @keyframes cardSlideUp {
-                  0% {
-                    opacity: 0;
-                    transform: translateY(40px);
-                  }
-                  100% {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
+                  0% { opacity: 0; transform: translateY(40px); }
+                  100% { opacity: 1; transform: translateY(0); }
                 }
 
                 @keyframes titleSlideIn {
-                  0% {
-                    opacity: 0;
-                    transform: translateY(30px);
-                  }
-                  100% {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
+                  0% { opacity: 0; transform: translateY(30px); }
+                  100% { opacity: 1; transform: translateY(0); }
                 }
 
                 @keyframes subtitleSlideIn {
-                  0% {
-                    opacity: 0;
-                    transform: translateY(20px);
-                  }
-                  100% {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
+                  0% { opacity: 0; transform: translateY(20px); }
+                  100% { opacity: 1; transform: translateY(0); }
                 }
 
                 @keyframes underlineExpand {
-                  0% {
-                    width: 0;
-                  }
-                  100% {
-                    width: 100%;
-                  }
+                  0% { width: 0; }
+                  100% { width: 100%; }
                 }
 
-                /* Response boxes */
                 .response-box {
-                  background: rgba(255, 255, 255, 0.05);
-                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  background: rgba(255,255,255,0.05);
+                  border: 1px solid rgba(255,255,255,0.1);
                   border-radius: 12px;
                   padding: 16px;
                   margin: 8px 0;
@@ -754,42 +725,24 @@ export default function Interview() {
                   background: rgba(59, 130, 246, 0.05);
                 }
 
-                /* Responsive */
                 @media (max-width: 768px) {
-                  .glass-card {
-                    border-radius: 16px !important;
-                    backdrop-filter: blur(15px) saturate(130%);
-                  }
-                  
-                  .glass-card:hover {
-                    transform: translateY(-4px) scale(1.01);
-                  }
-                  
-                  .recording-timer {
-                    font-size: 0.9rem;
-                    padding: 6px 12px;
-                  }
+                  .glass-card { border-radius: 16px !important; backdrop-filter: blur(15px) saturate(130%); }
+                  .glass-card:hover { transform: translateY(-4px) scale(1.01); }
+                  .recording-timer { font-size: 0.9rem; padding: 6px 12px; }
                 }
             `}</style>
 
-            {/* Bootstrap CSS */}
-            <link
-                href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"
-                rel="stylesheet"
-            />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
 
             <div className="interview-container min-vh-100">
                 <div className="row justify-content-center">
                     <div className="col-12 col-lg-10 col-xl-8">
                         <div className="p-4">
+
                             {/* Header */}
                             <div className="text-center mb-5">
-                                <h1 className="display-4 main-title mb-3">
-                                    MockMate
-                                </h1>
-                                <p className="subtitle">
-                                    AI-Powered Professional Interview Platform
-                                </p>
+                                <h1 className="display-4 main-title mb-3">MockMate</h1>
+                                <p className="subtitle">AI-Powered Professional Interview Platform</p>
                             </div>
 
                             {!interviewStarted ? (
@@ -821,6 +774,16 @@ export default function Interview() {
                                             </select>
                                         </div>
 
+                                        {/* Voice toggle on start screen */}
+                                        <div className="d-flex justify-content-center mb-4">
+                                            <button
+                                                onClick={() => setVoiceEnabled(prev => !prev)}
+                                                className={`btn voice-toggle ${voiceEnabled ? 'active' : ''}`}
+                                            >
+                                                {voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off'}
+                                            </button>
+                                        </div>
+
                                         <div className="text-center">
                                             <button
                                                 onClick={startInterview}
@@ -842,6 +805,7 @@ export default function Interview() {
                             ) : (
                                 /* Active Interview */
                                 <div className="d-grid gap-4">
+
                                     {/* Interview Progress */}
                                     <div className="glass-card">
                                         <div className="card-body">
@@ -858,14 +822,33 @@ export default function Interview() {
                                                             🔴 {formatTime(recordingTime)}
                                                         </div>
                                                     )}
+                                                    {/* Speaking indicator */}
+                                                    {isSpeaking && (
+                                                        <div className="speaking-indicator">
+                                                            <span className="speaking-dot"></span>
+                                                            Interviewer speaking...
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <button
-                                                    onClick={endInterview}
-                                                    disabled={loading || recording}
-                                                    className="btn btn-danger btn-sm glass-btn"
-                                                >
-                                                    End Interview
-                                                </button>
+                                                <div className="d-flex align-items-center gap-2">
+                                                    {/* Voice toggle during interview */}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (voiceEnabled) stopSpeaking();
+                                                            setVoiceEnabled(prev => !prev);
+                                                        }}
+                                                        className={`btn voice-toggle ${voiceEnabled ? 'active' : ''}`}
+                                                    >
+                                                        {voiceEnabled ? '🔊' : '🔇'}
+                                                    </button>
+                                                    <button
+                                                        onClick={endInterview}
+                                                        disabled={loading || recording}
+                                                        className="btn btn-danger btn-sm glass-btn"
+                                                    >
+                                                        End Interview
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -873,20 +856,18 @@ export default function Interview() {
                                     {/* Current Question */}
                                     <div className="glass-card">
                                         <div className="card-body">
-                                            <h3 className="card-title h4 mb-3">
-                                                Current Question:
-                                            </h3>
+                                            <h3 className="card-title h4 mb-3">Current Question:</h3>
                                             <p className="card-text h5 mb-4 lh-base">{question}</p>
 
                                             <div className="d-flex align-items-center gap-3 flex-wrap">
                                                 {!recording ? (
                                                     <button
                                                         onClick={startRecording}
-                                                        disabled={loading}
+                                                        disabled={loading || isSpeaking}
                                                         className="btn btn-success btn-lg glass-btn d-flex align-items-center gap-2"
                                                     >
                                                         <span>🎤</span>
-                                                        Start Recording Answer
+                                                        {isSpeaking ? 'Wait for question...' : 'Start Recording Answer'}
                                                     </button>
                                                 ) : (
                                                     <button
@@ -899,20 +880,30 @@ export default function Interview() {
                                                     </button>
                                                 )}
 
+                                                {/* Replay question button */}
+                                                {!recording && !isSpeaking && voiceEnabled && (
+                                                    <button
+                                                        onClick={() => speak(question)}
+                                                        disabled={loading}
+                                                        className="btn glass-btn d-flex align-items-center gap-2"
+                                                    >
+                                                        <span>🔁</span>
+                                                        Replay Question
+                                                    </button>
+                                                )}
+
                                                 {loading && (
                                                     <div className="d-flex align-items-center text-white">
                                                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                                        <span className="fw-semibold">
-                                                            {recording ? 'Starting recording...' : 'Processing your answer...'}
-                                                        </span>
+                                                        <span className="fw-semibold">Processing your answer...</span>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Recording Instructions */}
                                             <div className="mt-3">
                                                 <small className="text-white-50">
                                                     💡 Tip: Speak clearly and take your time. Click "Stop Recording" when finished.
+                                                    {voiceEnabled && ' The interviewer will speak questions and feedback aloud.'}
                                                 </small>
                                             </div>
                                         </div>
