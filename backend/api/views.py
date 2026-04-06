@@ -145,9 +145,7 @@ def submit_answer(request):
         logger.info(f"Audio file size: {audio_file.size} bytes")
         logger.info(f"Audio file type: {audio_file.content_type}")
 
-        # Check if Whisper model is available
-        if not whisper_model:
-            return JsonResponse({"error": "Speech recognition service unavailable"}, status=500)
+    
 
         # Save and transcribe audio
         tmp_path = None

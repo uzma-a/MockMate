@@ -147,10 +147,13 @@ DATABASES = {
     }
 }
 
-# CORS settings - Updated for Railway + Vercel
+# CORS settings 
 cors_origins = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173'
+    'http://localhost:3000,' \
+    'http://localhost:5173,' \
+    'http://127.0.0.1:3000,' \
+    'http://127.0.0.1:5173'
 ).split(',')
 
 # Add your Vercel frontend domain here
@@ -159,6 +162,8 @@ if 'VERCEL_FRONTEND_URL' in os.environ:
     cors_origins.append(os.environ['VERCEL_FRONTEND_URL'])
 
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins if origin.strip()]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS.extend(['.onrender.com', '.vercel.app'])
 
 # Allow all origins in development only
 if DEBUG:
